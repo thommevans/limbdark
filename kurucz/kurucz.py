@@ -45,7 +45,7 @@ import os, sys, pdb
 # A basic calling sequence for the routines in this
 # module would be:
 # 
-#   >> em_mus, em_wavs, ems = kurucz.readgrid( model_filename, \
+#   >> em_mus, em_wavs, ems = kurucz.readgrid( model_filepath='im01k2new.pck', \
 #                                              teff=6250, \
 #                                              logg=4.5, \
 #                                              nskip=1, \
@@ -81,7 +81,7 @@ import os, sys, pdb
 #
 
 
-def read_grid( filename, teff=None, logg=None, nskip=1, nhead=3, nwav=1221, nang=17 ):
+def read_grid( model_filepath=None, teff=None, logg=None, nskip=1, nhead=3, nwav=1221, nang=17 ):
     """
     Given the full path to a Kurucz input file, along with
     values for Teff and logg, extracts the values for the
@@ -90,7 +90,7 @@ def read_grid( filename, teff=None, logg=None, nskip=1, nhead=3, nwav=1221, nang
     emergent radiation.
     """
 
-    ifile = open( filename, 'rU' )
+    ifile = open( model_filepath, 'rU' )
     rows = ifile.readlines()
     ifile.close()
 
@@ -166,10 +166,14 @@ def fit_law( em_mus, em_wavs, ems, tr_wavs, tr_vals, ld_law='nonlin' ):
     # calculate the relative weights at each wavelength
     # using interpolation:
     if np.rank( tr_wavs )>0:
-        interpfunc = scipy.interpolate.interp1d( tr_wavs, tr_vals, kind='linear' )
-        ixs = ( ( em_wavs > tr_wavs.min() ) * ( em_wavs < tr_wavs.max()) )
-        weights = interpfunc( em_wavs[ixs] )
-        em_integ = np.sum( ems[ixs,:].T * weights, axis=1 )
+
+        ixs = ( em_wavs>tr_wavs.min() )*( em_wavs<tr_wavs.max() )
+        if len( np.unique( tr_vals ) )>1:
+            interpfunc = scipy.interpolate.interp1d( tr_wavs, tr_vals, kind='linear' )
+            weights = interpfunc( em_wavs[ixs] )
+        else:
+            weights = np.ones( len( em_wavs[ixs] ) )
+        em_integ = np.sum( ems[ixs,:].T*weights, axis=1 )
     # Otherwise, if we have an artificial situation
     # where we're interested in a single wavelength,
     # we will interpolate between the two closest
@@ -184,7 +188,9 @@ def fit_law( em_mus, em_wavs, ems, tr_wavs, tr_vals, ld_law='nonlin' ):
     # Prepare the linear basis matrix depending on the
     # limb darkening law being solved for:
     if ld_law=='nonlin':
-        phi = claret2004_nonlin( em_mus, coeffs=None )
+        phi = claret2004_nonlin_ld( em_mus, coeffs=None )
+    elif ld_law=='quad':
+        phi = quadratic_ld( em_mus, coeffs=None )
     else:
         pdb.set_trace() # haven't added any others yet
 
@@ -192,9 +198,41 @@ def fit_law( em_mus, em_wavs, ems, tr_wavs, tr_vals, ld_law='nonlin' ):
     # then ensure the coefficients have been normalised
     # appropriately before returning them as output:
     coeffs = np.linalg.lstsq( phi, em_integ )[0]
+
     return coeffs/coeffs[0]
 
-def claret2004_nonlin( mus, coeffs=None ):
+
+def quadratic_ld( mus, coeffs=None ):
+    """
+    Quadratic limb darkening law.
+
+    I(mu) = c0 - c1*( 1-mu ) - c2*( ( 1-mu )**2. )
+
+    Note, that if coeffs==None, then the basis
+    matrix will be returned in preparation for
+    finding the limb darkening coeffecients by
+    linear least squares. Otherwise, coeffs
+    should be an array with 2 entries, one for
+    each of the quadratic limb darkening
+    coefficients, in which case the output will
+    be the limb darkening law evaluated with
+    those coefficients at the locations of the
+    mus entries.
+    """
+
+    if coeffs==None:
+        phi = np.ones( [ len( mus ), 3 ] )
+        phi[:,1] = -( 1.0 - mus )
+        phi[:,2] = -( 1.0 - mus )**2.
+
+    else:
+        phi = coeffs[0] - coeffs[1]*( 1.0 - mus ) \
+              - coeffs[2]*( ( 1.0 - mus )**2. )
+
+    return phi
+
+
+def claret2004_nonlin_ld( mus, coeffs=None ):
     """
     The nonlinear limb darkening law as defined
     in Equation 5 of Claret et al 2004.
