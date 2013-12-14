@@ -78,6 +78,11 @@ import os, sys, pdb
 #    For this reason, I've been manually excluding them from the input
 #    that I pass into the fit_law() routine, after having read it in
 #    using the read_grid() routine.
+# 3. Following Sing (2010), it might also be a good idea to exclude
+#    values mu<0.05 when doing the fits, particulary for the crude
+#    limb darkening laws like linear and quadratic. I think this is
+#    because these points can bias the fits the most, and the crude
+#    models do a poor job of reproducing those points.
 #
 
 
@@ -183,14 +188,18 @@ def fit_law( em_mus, em_wavs, ems, tr_wavs, tr_vals, ld_law='nonlin' ):
         nem = len( em_wavs )
         under = em_wavs<tr_wavs
         above = em_wavs>tr_wavs
-        em_integ = 0.5 * ( ems[under,:][-1,:] + ems[above,:][0,:] )
+        em_integ = 0.5*( ems[under,:][-1,:] + ems[above,:][0,:] )
 
+    em_integ /= em_integ.max()
+    
     # Prepare the linear basis matrix depending on the
     # limb darkening law being solved for:
     if ld_law=='nonlin':
         phi = claret2004_nonlin_ld( em_mus, coeffs=None )
     elif ld_law=='quad':
         phi = quadratic_ld( em_mus, coeffs=None )
+    elif ld_law=='lin':
+        phi = linear_ld( em_mus, coeffs=None )
     else:
         pdb.set_trace() # haven't added any others yet
 
@@ -200,6 +209,34 @@ def fit_law( em_mus, em_wavs, ems, tr_wavs, tr_vals, ld_law='nonlin' ):
     coeffs = np.linalg.lstsq( phi, em_integ )[0]
 
     return coeffs/coeffs[0]
+
+
+def linear_ld( mus, coeffs=None ):
+    """
+    Linear limb darkening law.
+
+    I(mu) = c0 - c1*( 1-mu )
+
+    Note, that if coeffs==None, then the basis
+    matrix will be returned in preparation for
+    finding the limb darkening coeffecients by
+    linear least squares. Otherwise, coeffs
+    should be an array with 1 entries, one for
+    each of the linear limb darkening
+    coefficients, in which case the output will
+    be the limb darkening law evaluated with
+    those coefficients at the locations of the
+    mus entries.
+    """
+
+    if coeffs==None:
+        phi = np.ones( [ len( mus ), 2 ] )
+        phi[:,1] = -( 1.0 - mus )
+
+    else:
+        phi = coeffs[0] - coeffs[1]*( 1.0 - mus )
+
+    return phi
 
 
 def quadratic_ld( mus, coeffs=None ):
@@ -223,7 +260,7 @@ def quadratic_ld( mus, coeffs=None ):
     if coeffs==None:
         phi = np.ones( [ len( mus ), 3 ] )
         phi[:,1] = -( 1.0 - mus )
-        phi[:,2] = -( 1.0 - mus )**2.
+        phi[:,2] = -( ( 1.0 - mus )**2. )
 
     else:
         phi = coeffs[0] - coeffs[1]*( 1.0 - mus ) \
