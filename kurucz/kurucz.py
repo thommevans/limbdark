@@ -207,8 +207,12 @@ def fit_law( em_mus, em_wavs, ems, tr_wavs, tr_vals, ld_law='nonlin' ):
     # then ensure the coefficients have been normalised
     # appropriately before returning them as output:
     coeffs = np.linalg.lstsq( phi, em_integ )[0]
+    coeffs /= coeffs[0]
 
-    return coeffs/coeffs[0]
+    # Exclude the unity term:
+    coeffs = coeffs[1:]
+    
+    return coeffs
 
 
 def linear_ld( mus, coeffs=None ):
