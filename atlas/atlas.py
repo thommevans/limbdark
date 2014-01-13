@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.interpolate
 import os, sys, pdb
 
 # Overview:
