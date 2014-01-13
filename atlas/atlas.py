@@ -63,32 +63,6 @@ import os, sys, pdb
 #       Note that the keyword argument 'passband_sensitivty' can be set to None
 #       if you want a simple boxcar transmission function.
 #
-# NOTE:
-# 1. I found a frustrating amount of heterogeneity between the format
-#    of some of the input files on Kurucz's website. For this reason,
-#    I think the best option is to manually determine the format of
-#    the input file you're interested in at any given time, and pass
-#    this into the read_grid() routine in the form of the variables
-#    nskip, nhead, nwav and nang. Typical values I've encountered so
-#    far are:
-#      nskip = 1
-#      nhead = 3
-#      nwav = 1221
-#      nang = 17
-#    but annoyingly these can't be frozen as global variables in this
-#    module, because I've also encountered cases where nwav = 1217.
-# 2. Another issue I've had with the files on Kurucz's website is that
-#    the values in the column for mu=1.0 are all pretty close to zero,
-#    which just seems wrong when compared with values at the other mus.
-#    For this reason, I've been manually excluding them from the input
-#    that I pass into the fit_law() routine, after having read it in
-#    using the read_grid() routine.
-# 3. Following Sing (2010), it might also be a good idea to exclude
-#    values mu<0.05 when doing the fits, particulary for the crude
-#    limb darkening laws like linear and quadratic. I think this is
-#    because these points can bias the fits the most, and the crude
-#    models do a poor job of reproducing those points.
-#
 
 
 def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
