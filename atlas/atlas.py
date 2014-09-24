@@ -70,8 +70,7 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     Given a stellar model grid, computes the limb darkening coefficients
     for four different limb darkening laws: linear, quadratic, three-parameter
     nonlinear and four-parameter nonlinear.
-    """
-    
+    """    
 
     # If no passband transmission function has been provided, use
     # a simple boxcar function:
@@ -83,21 +82,25 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     passband_wav_nm = passband_wav_nm[ixs]
     passband_sensitivity = passband_sensitivity[ixs]
     passband_sensitivity /= passband_sensitivity.max()
+
+    nwav = len( grid_wav_nm )
+    mask = np.zeros( nwav )
     ixs = ( grid_wav_nm>=passband_wav_nm.min() )*\
           ( grid_wav_nm<=passband_wav_nm.max() )
-    grid_wav_nm = grid_wav_nm[ixs]
-    grid_intensities = grid_intensities[ixs,:]
+    mask[ixs] = 1.0
+    #grid_wav_nm = grid_wav_nm[ixs]
+    #grid_intensities = grid_intensities[ixs,:]
     interp_sensitivity = np.interp( grid_wav_nm, passband_wav_nm, passband_sensitivity )
 
     # Integrate the model spectra over the passband for each value of mu:
     nmu = len( grid_mu )
     integrated_intensities = np.zeros( nmu )
-    normfactor = np.trapz( interp_sensitivity, x=grid_wav_nm )
+    normfactor = np.trapz( grid_wav_nm*mask*interp_sensitivity, x=grid_wav_nm )
     for i in range( nmu ):
         # Multiply the intensities by wavelength to convert
         # from energy flux to photon flux, as appropriate for
         # photon counting devices such as CCDs:
-        integrand = interp_sensitivity*grid_intensities[:,i]*grid_wav_nm
+        integrand = grid_wav_nm*mask*interp_sensitivity*grid_intensities[:,i]
         integral = np.trapz( integrand, x=grid_wav_nm )
         integrated_intensities[i] = integral/normfactor
     integrated_intensities /= integrated_intensities[0]
@@ -114,14 +117,12 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
             ixs = ( grid_mu>=0 )
         else:
             ixs = ( grid_mu>=0.05 )
-        coeffs_raw = np.linalg.lstsq( phi[ixs,:], integrated_intensities[ixs] )[0]
-        coeffs = coeffs_raw/coeffs_raw[0] # normalise
-        coeffs = coeffs[1:] # exclude the unity term
+        coeffs = np.linalg.lstsq( phi[ixs,:], integrated_intensities[ixs]-1 )[0]
         ld_coeff_fits[name] = coeffs
         if plot_fits==True:
             plt.figure()
             plt.plot( grid_mu[ixs], integrated_intensities[ixs], 'ok' )
-            plt.plot( grid_mu[ixs], np.dot( phi[ixs,:], coeffs_raw ), '-r', lw=2 )
+            plt.plot( grid_mu[ixs], 1+np.dot( phi[ixs,:], coeffs ), '-r', lw=2 )
             plt.title( name )
             plt.ylabel( 'Passband-integrated Intensity' )
             plt.xlabel( 'mu=cos(theta)' )
@@ -250,11 +251,11 @@ def linear_ld( mus, coeffs=None ):
     """
 
     if coeffs==None:
-        phi = np.ones( [ len( mus ), 2 ] )
-        phi[:,1] = -( 1.0 - mus )
+        phi = np.ones( [ len( mus ), 1 ] )
+        phi[:,0] = -( 1.0 - mus )
 
     else:
-        phi = coeffs[0] - coeffs[1]*( 1.0 - mus )
+        phi = 1. - coeffs[1]*( 1.0 - mus )
 
     return 'linear', phi
 
@@ -278,13 +279,13 @@ def quadratic_ld( mus, coeffs=None ):
     """
 
     if coeffs==None:
-        phi = np.ones( [ len( mus ), 3 ] )
-        phi[:,1] = -( 1.0 - mus )
-        phi[:,2] = -( ( 1.0 - mus )**2. )
+        phi = np.ones( [ len( mus ), 2 ] )
+        phi[:,0] = -( 1.0 - mus )
+        phi[:,1] = -( ( 1.0 - mus )**2. )
 
     else:
-        phi = coeffs[0] - coeffs[1]*( 1.0 - mus ) \
-              - coeffs[2]*( ( 1.0 - mus )**2. )
+        phi = 1. - coeffs[0]*( 1.0 - mus ) \
+              - coeffs[1]*( ( 1.0 - mus )**2. )
 
     return 'quadratic', phi
 
@@ -307,15 +308,15 @@ def threeparam_nonlin_ld( mus, coeffs=None ):
     """
 
     if coeffs==None:
-        phi = np.ones( [ len( mus ), 4 ] )
-        phi[:,1] = - ( 1.0 - mus )
-        phi[:,2] = - ( 1.0 - mus**(3./2.) )
-        phi[:,3] = - ( 1.0 - mus**2. )
+        phi = np.ones( [ len( mus ), 3 ] )
+        phi[:,0] = - ( 1.0 - mus )
+        phi[:,1] = - ( 1.0 - mus**(3./2.) )
+        phi[:,2] = - ( 1.0 - mus**2. )
 
     else:
-        phi = coeffs[0] - coeffs[1] * ( 1.0 - mus ) \
-              - coeffs[2] * ( 1.0 - mus**(3./2.) ) \
-              - coeffs[3] * ( 1.0 - mus**2. )
+        phi = 1 - coeffs[0] * ( 1.0 - mus ) \
+              - coeffs[1] * ( 1.0 - mus**(3./2.) ) \
+              - coeffs[2] * ( 1.0 - mus**2. )
 
     return 'threeparam_nonlin', phi
 
@@ -338,17 +339,17 @@ def fourparam_nonlin_ld( mus, coeffs=None ):
     """
 
     if coeffs==None:
-        phi = np.ones( [ len( mus ), 5 ] )
-        phi[:,1] = - ( 1.0 - mus**(1./2.) )
-        phi[:,2] = - ( 1.0 - mus )
-        phi[:,3] = - ( 1.0 - mus**(3./2.) )
-        phi[:,4] = - ( 1.0 - mus**(2.) )
+        phi = np.ones( [ len( mus ), 4 ] )
+        phi[:,0] = - ( 1.0 - mus**(1./2.) )
+        phi[:,1] = - ( 1.0 - mus )
+        phi[:,2] = - ( 1.0 - mus**(3./2.) )
+        phi[:,3] = - ( 1.0 - mus**(2.) )
 
     else:
-        phi = coeffs[0] - coeffs[1] * ( 1.0 - mus**(1./2.) ) \
-              - coeffs[2] * ( 1.0 - mus ) \
-              - coeffs[3] * ( 1.0 - mus**(3./2.) ) \
-              - coeffs[4] * ( 1.0 - mus**(2.) )
+        phi = 1 - coeffs[0] * ( 1.0 - mus**(1./2.) ) \
+              - coeffs[1] * ( 1.0 - mus ) \
+              - coeffs[2] * ( 1.0 - mus**(3./2.) ) \
+              - coeffs[3] * ( 1.0 - mus**(2.) )
 
     return 'fourparam_nonlin', phi
 
