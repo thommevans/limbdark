@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os, sys, pdb
+import scipy.integrate
+import pidly
 
 # Overview:
 #
@@ -95,13 +97,22 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     # Integrate the model spectra over the passband for each value of mu:
     nmu = len( grid_mu )
     integrated_intensities = np.zeros( nmu )
-    normfactor = np.trapz( grid_wav_nm*mask*interp_sensitivity, x=grid_wav_nm )
+
+    x = grid_wav_nm
+    y = grid_wav_nm*mask*interp_sensitivity
+    nwav = len( grid_wav_nm )
+    ixs = np.arange( nwav )[interp_sensitivity>0]
+    ixs = np.concatenate( [ [ ixs[0]-1 ], ixs, [ ixs[-1]+1 ] ] )
+    ixs = ixs[(ixs>=0)*(ixs<nwav)]
+    #normfactor = scipy.integrate.simps( y[ixs], x=x[ixs] )
+    normfactor = scipy.integrate.trapz( y[ixs], x=x[ixs] )
     for i in range( nmu ):
         # Multiply the intensities by wavelength to convert
         # from energy flux to photon flux, as appropriate for
         # photon counting devices such as CCDs:
         integrand = grid_wav_nm*mask*interp_sensitivity*grid_intensities[:,i]
-        integral = np.trapz( integrand, x=grid_wav_nm )
+        #integral = scipy.integrate.simps( integrand, x=grid_wav_nm )
+        integral = scipy.integrate.trapz( integrand, x=grid_wav_nm )
         integrated_intensities[i] = integral/normfactor
     integrated_intensities /= integrated_intensities[0]
 
