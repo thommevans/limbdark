@@ -104,15 +104,15 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     ixs = np.arange( nwav )[interp_sensitivity>0]
     ixs = np.concatenate( [ [ ixs[0]-1 ], ixs, [ ixs[-1]+1 ] ] )
     ixs = ixs[(ixs>=0)*(ixs<nwav)]
-    #normfactor = scipy.integrate.simps( y[ixs], x=x[ixs] )
-    normfactor = scipy.integrate.trapz( y[ixs], x=x[ixs] )
+    normfactor = scipy.integrate.simps( y[ixs], x=x[ixs] )
+    #normfactor = scipy.integrate.trapz( y[ixs], x=x[ixs] )
     for i in range( nmu ):
         # Multiply the intensities by wavelength to convert
         # from energy flux to photon flux, as appropriate for
         # photon counting devices such as CCDs:
         integrand = grid_wav_nm*mask*interp_sensitivity*grid_intensities[:,i]
-        #integral = scipy.integrate.simps( integrand, x=grid_wav_nm )
-        integral = scipy.integrate.trapz( integrand, x=grid_wav_nm )
+        integral = scipy.integrate.simps( integrand, x=grid_wav_nm )
+        #integral = scipy.integrate.trapz( integrand, x=grid_wav_nm )
         integrated_intensities[i] = integral/normfactor
     integrated_intensities /= integrated_intensities[0]
 
