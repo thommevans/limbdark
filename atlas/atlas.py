@@ -37,12 +37,13 @@ import pidly
 # A basic calling sequence for the routines in this module would be:
 #
 #   1>> mu, wav, intens = atlas.read_grid( model_filepath='im01k2new.pck', \
-#                                         teff=6000, logg=4., new_grid=False )
+#                                          teff=6000, logg=4., new_grid=False )
 #   2>> tr_curve = np.loadtxt( tr_filename )
 #   3>> tr_wavs = tr_curve[:,0] # convert these wavelengths to nm if necessary
 #   4>> tr_vals = tr_curve[:,1]
 #   5>> ld_coeffs = atlas.fit_law( mu, wav, intens, tr_wavs, \
-#                                 passband_sensitivity=tr_vals, plot_fits=True )
+#                                  cuton_wav_nm=800, cutoff_wav_nm=1000, \
+#                                  passband_sensitivity=tr_vals, plot_fits=True )
 #
 # Stepping through each of the above commands:
 #   1>> Reads in the model grid. Note that teff and logg have to correspond
@@ -67,6 +68,7 @@ import pidly
 
 
 def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
+             cuton_wav_nm=None, cutoff_wav_nm=None, \
              passband_sensitivity=None, plot_fits=False ):
     """
     Given a stellar model grid, computes the limb darkening coefficients
@@ -87,11 +89,14 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
 
     nwav = len( grid_wav_nm )
     mask = np.zeros( nwav )
-    ixs = ( grid_wav_nm>=passband_wav_nm.min() )*\
-          ( grid_wav_nm<=passband_wav_nm.max() )
+    #ixs = ( grid_wav_nm>=passband_wav_nm.min() )*\
+    #      ( grid_wav_nm<=passband_wav_nm.max() )
+    ixs = ( grid_wav_nm>=cuton_wav_nm )*\
+          ( grid_wav_nm<=cutoff_wav_nm )
     mask[ixs] = 1.0
     #grid_wav_nm = grid_wav_nm[ixs]
     #grid_intensities = grid_intensities[ixs,:]
+
     interp_sensitivity = np.interp( grid_wav_nm, passband_wav_nm, passband_sensitivity )
 
     # Integrate the model spectra over the passband for each value of mu:
