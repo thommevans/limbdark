@@ -1,6 +1,7 @@
 import pdb, sys, os
 import numpy as np
 import scipy.integrate
+import matplotlib.pyplot as plt
 
 
 
@@ -57,6 +58,14 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
         #integral = scipy.integrate.trapz( integrand, x=grid_wav_nm )
         integrated_intensities[i] = integral/normfactor
     integrated_intensities /= integrated_intensities[0]
+
+    #import matplotlib.pyplot as plt
+    #plt.figure()
+    #plt.plot( grid_mu,integrated_intensities,'-k')
+    #plt.plot( grid_mu,integrated_intensities,'or')
+    ##print 'xxxxxxxx', np.shape(grid_wav_nm), np.shape(grid_mu), np.shape(integrated_intensities)
+    #print 'mu -->', grid_mu
+    #pdb.set_trace()
 
     # Evaluate limb darkening coefficients using linear least
     # squares for each of the four limb darkening laws:
