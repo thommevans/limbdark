@@ -150,7 +150,7 @@ def read_grid( model_filepath=None, teff=None, logg=None, new_grid=False ):
     # Extract the intensities at each of the wavelengths
     # as a function of wavelength:
     grid_ix = ( logg_ixs*teff_ixs )
-    row_ix = header_ixs[grid_ix]
+    row_ix = int( header_ixs[grid_ix] )
     grid_lines = rows[row_ix+nhead:row_ix+nhead+nwav]
     grid = []
     for i in range( nwav ):
