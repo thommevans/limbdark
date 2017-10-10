@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import os, sys, pdb
@@ -116,14 +117,14 @@ def read_grid( model_filepath=None, teff=None, logg=None, new_grid=False ):
     # Note: The 'new' model grids don't quite have the 
     # same format, so they won't work for this code.
 
-    print '\nReading in the model grid...'
+    print( '\nReading in the model grid...' )
     ifile = open( model_filepath, 'rU' )
     ifile.seek( 0 )
     rows = ifile.readlines()
     ifile.close()
     rows = rows[nskip:]
     nrows = len( rows )
-    print 'Done.'
+    print( 'Done.' )
 
     # The angles, where mu=cos(theta):
     mus = np.array( rows[nskip+nhead-1].split(), dtype=float )

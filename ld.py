@@ -14,6 +14,25 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     nonlinear and four-parameter nonlinear.
     """    
 
+    # Restrict stellar model to wavelength range centered on channel:
+    dwav = cutoff_wav_nm-cuton_wav_nm
+    wavl = cuton_wav_nm - 0.1*dwav
+    wavu = cutoff_wav_nm + 0.1*dwav
+    ixs = ( grid_wav_nm>=wavl )*( grid_wav_nm<=wavu )
+    grid_wav_nm = grid_wav_nm[ixs]
+    grid_intensities = grid_intensities[ixs,:]
+
+    # Interpolate onto a finer grid to allow for narrow channels:
+    nf = int( 1e5 )
+    xf = np.linspace( grid_wav_nm.min(), grid_wav_nm.max(), nf )
+    nmu = len( grid_mu )
+    yf = np.zeros( [ nf, nmu ] )
+    for i in range( nmu ):
+        yf[:,i] = np.interp( xf, grid_wav_nm, grid_intensities[:,i] )
+    grid_wav_nm = xf
+    grid_intensities = yf    
+
+
     # If no passband transmission function has been provided, use
     # a simple boxcar function:
     if passband_sensitivity==None:
