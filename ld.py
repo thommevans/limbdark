@@ -23,8 +23,9 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     grid_intensities = grid_intensities[ixs,:]
 
     # Interpolate onto a finer grid to allow for narrow channels:
-    nf = int( 1e5 )
-    xf = np.linspace( grid_wav_nm.min(), grid_wav_nm.max(), nf )
+    nf = int( 1e6 )
+    #xf = np.linspace( grid_wav_nm.min(), grid_wav_nm.max(), nf )
+    xf = np.linspace( wavl, wavu, nf )
     nmu = len( grid_mu )
     yf = np.zeros( [ nf, nmu ] )
     for i in range( nmu ):
