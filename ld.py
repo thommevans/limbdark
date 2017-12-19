@@ -36,7 +36,7 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
 
     # If no passband transmission function has been provided, use
     # a simple boxcar function:
-    if passband_sensitivity==None:
+    if passband_sensitivity is None:
         passband_sensitivity = np.ones( passband_wav_nm.size )
 
     # Interpolate passband wavelengths onto model wavelength grid:
@@ -130,7 +130,7 @@ def linear_ld( mus, coeffs=None ):
     mus entries.
     """
 
-    if coeffs==None:
+    if coeffs is None:
         phi = np.ones( [ len( mus ), 1 ] )
         phi[:,0] = -( 1.0 - mus )
 
@@ -158,7 +158,7 @@ def quadratic_ld( mus, coeffs=None ):
     mus entries.
     """
 
-    if coeffs==None:
+    if coeffs is None:
         phi = np.ones( [ len( mus ), 2 ] )
         phi[:,0] = -( 1.0 - mus )
         phi[:,1] = -( ( 1.0 - mus )**2. )
@@ -187,7 +187,7 @@ def threeparam_nonlin_ld( mus, coeffs=None ):
     mus entries.
     """
 
-    if coeffs==None:
+    if coeffs is None:
         phi = np.ones( [ len( mus ), 3 ] )
         phi[:,0] = - ( 1.0 - mus )
         phi[:,1] = - ( 1.0 - mus**(3./2.) )
@@ -218,7 +218,7 @@ def fourparam_nonlin_ld( mus, coeffs=None ):
     mus entries.
     """
 
-    if coeffs==None:
+    if coeffs is None:
         phi = np.ones( [ len( mus ), 4 ] )
         phi[:,0] = - ( 1.0 - mus**(1./2.) )
         phi[:,1] = - ( 1.0 - mus )
