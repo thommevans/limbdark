@@ -79,20 +79,18 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
         integrated_intensities[i] = integral/normfactor
     integrated_intensities /= integrated_intensities[0]
 
-    #import matplotlib.pyplot as plt
-    #plt.figure()
-    #plt.plot( grid_mu,integrated_intensities,'-k')
-    #plt.plot( grid_mu,integrated_intensities,'or')
-    ##print 'xxxxxxxx', np.shape(grid_wav_nm), np.shape(grid_mu), np.shape(integrated_intensities)
-    #print 'mu -->', grid_mu
-    #pdb.set_trace()
-
     # Evaluate limb darkening coefficients using linear least
     # squares for each of the four limb darkening laws:
     ld_coeff_fits = {}
     laws = [ fourparam_nonlin_ld, threeparam_nonlin_ld, quadratic_ld, linear_ld ]
-    for law in laws:
-        name, phi = law( grid_mu, coeffs=None )
+    if plot_fits==True:
+        fig = plt.figure()
+        ax = fig.add_subplot( 111 )
+        ax.plot( grid_mu, integrated_intensities, 'ok' )
+        cs = [ 'PaleGreen', 'ForestGreen', 'Indigo', 'Orange' ]
+    n = len( laws )
+    for i in range( n ):
+        name, phi = laws[i]( grid_mu, coeffs=None )
         # Following Sing (2010), exclude certain values
         # of mu, depending on the limb darkening law:
         if name=='fourparam_nonlin':
@@ -102,12 +100,11 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
         coeffs = np.linalg.lstsq( phi[ixs,:], integrated_intensities[ixs]-1 )[0]
         ld_coeff_fits[name] = coeffs
         if plot_fits==True:
-            plt.figure()
-            plt.plot( grid_mu[ixs], integrated_intensities[ixs], 'ok' )
-            plt.plot( grid_mu[ixs], 1+np.dot( phi[ixs,:], coeffs ), '-r', lw=2 )
-            plt.title( name )
-            plt.ylabel( 'Passband-integrated Intensity' )
-            plt.xlabel( 'mu=cos(theta)' )
+            ax.plot( grid_mu[ixs], 1+np.dot( phi[ixs,:], coeffs ), '-', c=cs[i], lw=2, label=name )
+    if plot_fits==True:
+        ax.legend( loc='upper right' )
+        ax.set_ylabel( 'Passband-integrated Intensity' )
+        ax.set_xlabel( 'mu=cos(theta)' )
 
     return ld_coeff_fits
 
