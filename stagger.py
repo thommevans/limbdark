@@ -50,7 +50,7 @@ def read_grid( model_filepath=None ):
     intensities_in = z['flx']    
     nang = len( mus )
     nwav = len( wavs_A_in[0] )
-    wavs_nm = wavs_A_in[0]/10.#np.zeros( [nwav,nang] )
+    wavs_nm = wavs_A_in[0]/10.
     intensities = np.zeros( [nwav,nang] )
     for i in range( nang ):
         intensities[:,i] = intensities_in[i]
@@ -60,7 +60,5 @@ def read_grid( model_filepath=None ):
     # Reverse order so that mu decreases from 1:
     mus = mus[::-1]
     intensities = intensities[:,::-1]
-    #print 'hhhhhhh', z['mu']
-    #print 'ggggggg', mus
-    #pdb.set_trace()
+    # TODO = Understand units of these output intensities.
     return mus, wavs_nm, intensities

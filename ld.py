@@ -14,11 +14,23 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     nonlinear and four-parameter nonlinear.
     """    
 
+    # Make sure the throughput goes to zero at the edges:
+    ixs = np.argsort( passband_wav_nm )
+    passband_wav_nm = passband_wav_nm[ixs]
+    passband_sensitivity = passband_sensitivity[ixs]
+    dw = 1e-2
+    wl = passband_wav_nm.min()-dw
+    wu = passband_wav_nm.max()+dw
+    passband_wav_nm = np.concatenate( [ [wl], passband_wav_nm, [wu] ] )
+    passband_sensitivity = np.concatenate( [ [0], passband_sensitivity, [0] ] )
+
     # Restrict stellar model to wavelength range centered on channel:
     dwav = cutoff_wav_nm-cuton_wav_nm
     wavl = cuton_wav_nm - 0.1*dwav
     wavu = cutoff_wav_nm + 0.1*dwav
+
     ixs = ( grid_wav_nm>=wavl )*( grid_wav_nm<=wavu )
+
     grid_wav_nm = grid_wav_nm[ixs]
     grid_intensities = grid_intensities[ixs,:]
 
@@ -33,7 +45,6 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     grid_wav_nm = xf
     grid_intensities = yf    
 
-
     # If no passband transmission function has been provided, use
     # a simple boxcar function:
     if passband_sensitivity is None:
@@ -45,6 +56,22 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     passband_sensitivity = passband_sensitivity[ixs]
     passband_sensitivity /= passband_sensitivity.max()
 
+    stellar_spec = np.mean( grid_intensities, axis=1 )
+    if plot_fits==True:
+        fig = plt.figure( figsize=[10,9] )
+        ax1 = fig.add_subplot( 211 )
+        ax2 = fig.add_subplot( 212 )
+        x1 = grid_wav_nm
+        y1 = stellar_spec/stellar_spec.max()
+        ax1.plot( x1, y1, '-', c='DodgerBlue', label='Mean Stellar Intensity' )
+        ax1.fill_between( passband_wav_nm, np.zeros( passband_sensitivity.size ), \
+                          passband_sensitivity, edgecolor='Salmon', facecolor='none', zorder=10, label='Passband' )
+        ixs1 = ( y1>0.05*y1.max() )*( x1>x1[np.argmax(y1)] )
+        ax1.set_xlim( [ 0, x1[ixs1].max() ] )
+        ax1.set_xlabel( 'Wavelength (nm)' )
+        ax1.set_ylabel( 'Normalised Flux' )
+        ax1.legend( loc='upper right' )
+
     nwav = len( grid_wav_nm )
     mask = np.zeros( nwav )
     #ixs = ( grid_wav_nm>=passband_wav_nm.min() )*\
@@ -52,8 +79,6 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     ixs = ( grid_wav_nm>=cuton_wav_nm )*\
           ( grid_wav_nm<=cutoff_wav_nm )
     mask[ixs] = 1.0
-    #grid_wav_nm = grid_wav_nm[ixs]
-    #grid_intensities = grid_intensities[ixs,:]
 
     interp_sensitivity = np.interp( grid_wav_nm, passband_wav_nm, passband_sensitivity )
 
@@ -84,9 +109,7 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     ld_coeff_fits = {}
     laws = [ fourparam_nonlin_ld, threeparam_nonlin_ld, quadratic_ld, linear_ld ]
     if plot_fits==True:
-        fig = plt.figure()
-        ax = fig.add_subplot( 111 )
-        ax.plot( grid_mu, integrated_intensities, 'ok' )
+        ax2.plot( grid_mu, integrated_intensities, 'ok' )
         cs = [ 'PaleGreen', 'ForestGreen', 'Indigo', 'Orange' ]
     n = len( laws )
     for i in range( n ):
@@ -100,11 +123,11 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
         coeffs = np.linalg.lstsq( phi[ixs,:], integrated_intensities[ixs]-1 )[0]
         ld_coeff_fits[name] = coeffs
         if plot_fits==True:
-            ax.plot( grid_mu[ixs], 1+np.dot( phi[ixs,:], coeffs ), '-', c=cs[i], lw=2, label=name )
+            ax2.plot( grid_mu[ixs], 1+np.dot( phi[ixs,:], coeffs ), '-', c=cs[i], lw=2, label=name )
     if plot_fits==True:
-        ax.legend( loc='upper right' )
-        ax.set_ylabel( 'Passband-integrated Intensity' )
-        ax.set_xlabel( 'mu=cos(theta)' )
+        ax2.legend( loc='upper left' )
+        ax2.set_ylabel( 'Passband-integrated Intensity' )
+        ax2.set_xlabel( 'mu=cos(theta)' )
 
     return ld_coeff_fits
 
