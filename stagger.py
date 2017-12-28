@@ -60,5 +60,5 @@ def read_grid( model_filepath=None ):
     # Reverse order so that mu decreases from 1:
     mus = mus[::-1]
     intensities = intensities[:,::-1]
-    # TODO = Understand units of these output intensities.
+    # TODO = Understand units of these output intensities/fluxes.
     return mus, wavs_nm, intensities
