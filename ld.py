@@ -56,8 +56,8 @@ def fit_law( grid_mu, grid_wav_nm, grid_intensities, passband_wav_nm, \
     passband_sensitivity = passband_sensitivity[ixs]
     passband_sensitivity /= passband_sensitivity.max()
 
-    stellar_spec = np.mean( grid_intensities, axis=1 )
     if plot_fits==True:
+        stellar_spec = np.mean( grid_intensities, axis=1 )
         fig = plt.figure( figsize=[10,9] )
         ax1 = fig.add_subplot( 211 )
         ax2 = fig.add_subplot( 212 )
